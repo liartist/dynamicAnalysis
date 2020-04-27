@@ -5,19 +5,23 @@ import json
 import time
 from json.decoder import JSONDecodeError
 
-ALL_REPORTS_DIR = 'report/'
-SINGLE_REPORT_FILE = 'reports/report.json'
+ALL_REPORTS_DIR = 'reports/'
 RESULT_DIR = 'sequence/'
 
 print('API sequence extraction')
 print()
 
 for reportNum in os.listdir(ALL_REPORTS_DIR): # 1 2 3 ....
-    reportFile = ALL_REPORTS_DIR + reportNum + '/' + SINGLE_REPORT_FILE
+    reportFile = ALL_REPORTS_DIR + reportNum
     print(reportFile)
     APISequence = {}
 
     if os.path.isfile(reportFile):
+        if os.stat(reportFile).st_size > 2000000000:
+            print('\t[ERROR] file size over 2.0 GB')
+            print()
+            continue
+
         with open(reportFile, 'rb') as f:
             try:
                 jsonData = json.load(f)
@@ -25,6 +29,7 @@ for reportNum in os.listdir(ALL_REPORTS_DIR): # 1 2 3 ....
             except JSONDecodeError:
                 print('\t[ERROR] json decode')
                 print()
+                continue
 
             try:
                 for process in jsonData['behavior']['processes']:
@@ -38,14 +43,15 @@ for reportNum in os.listdir(ALL_REPORTS_DIR): # 1 2 3 ....
                         APISequence[time].append(api)
             
             except KeyError:
-                print('[ERROR] processes-calls not found')
+                print('\t[ERROR] processes-calls not found')
                 print()
                 continue
             
     if not os.path.isdir(RESULT_DIR):
         os.mkdir(RESULT_DIR)
     
-    resultFile = RESULT_DIR + reportNum + '.txt'
+    resultFile = RESULT_DIR + reportNum
+    resultFile = resultFile.replace('json', 'txt')
     
     if bool(APISequence):
         with open(resultFile, 'w') as f:
